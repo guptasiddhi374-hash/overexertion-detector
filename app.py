@@ -2,42 +2,71 @@ import streamlit as st
 import joblib
 import pandas as pd
 
-# 1. Load the "Brain" (The model you saved from Colab)
-# Ensure your .pkl file is in the same folder as this script!
-model = joblib.load('overexertion_model.pkl')
+# 1. Page Configuration & Sidebar
+st.set_page_config(page_title="Wearable AI Monitor", page_icon="⌚")
 
-# 2. Design the Website Header
-st.title("🏃 Overexertion & Stress Monitoring System")
-st.markdown("""
-This AI model predicts your physical state based on wearable sensor data. 
-Adjust the sensors below to see the real-time prediction.
+st.sidebar.header("🛡️ System Information")
+st.sidebar.info("""
+This AI model predicts physical states using physiological sensor data. 
+Use the 'About' page in the sidebar for technical validation.
 """)
 
-# 3. Create the User Interface (Sliders)
-st.sidebar.header("Wearable Sensor Inputs")
-hr = st.sidebar.slider("Heart Rate (BPM)", 40, 200, 75)
-eda = st.sidebar.slider("Skin Conductance (EDA)", 0.0, 20.0, 1.0)
-temp = st.sidebar.slider("Skin Temp (°C)", 28.0, 40.0, 32.0)
-acc = st.sidebar.slider("Movement (Acc_Mag)", 0.0, 2.0, 0.1)
+# Ethics & Privacy Section
+st.sidebar.divider()
+st.sidebar.subheader("🔒 Data Privacy & Ethics")
+st.sidebar.caption("""
+This prototype follows **Privacy-by-Design** principles. 
+No Personal Identifiable Information (PII) is stored or 
+transmitted. Data is processed locally for inference.
+""")
 
-# 4. Process data and Make Prediction
-# The column names must match exactly what was used during training
-input_df = pd.DataFrame([[hr, eda, temp, acc]], 
-                        columns=['HR', 'EDA', 'Temp', 'Acc_Mag'])
+# 2. Main Interface
+st.title("⌚ Live Overexertion Detector")
+st.write("Adjust the sliders below to simulate real-time wearable sensor inputs.")
 
-prediction = model.predict(input_df)[0]
+# 3. User Inputs (Simulating Sensors)
+col1, col2 = st.columns(2)
 
-# 5. Display the Result with professional styling
-st.subheader("AI Analysis Result:")
-if prediction == "Active":
-    st.info(f"The user is currently: **{prediction}**")
-    if hr > 175:
-        st.error("⚠️ WARNING: High intensity detected. Risk of overexertion!")
-elif prediction == "Stress":
-    st.warning(f"The user is currently: **{prediction}**")
-else:
-    st.success(f"The user is currently: **{prediction}**")
+with col1:
+    hr = st.slider("Heart Rate (BPM)", 40, 200, 80)
+    eda = st.slider("EDA (Skin Conductance)", 0.0, 20.0, 1.0)
 
-# 6. Show the raw data table (optional)
-with st.expander("See Raw Sensor Data"):
-    st.write(input_df)
+with col2:
+    temp = st.slider("Body Temp (°C)", 30.0, 42.0, 36.5)
+    acc = st.slider("Movement (Acc_Mag)", 0.0, 50.0, 1.0)
+
+# 4. Load Model and Make Prediction
+try:
+    model = joblib.load('overexertion_model.pkl')
+    # Create feature dataframe (Ensure columns match your training data)
+    input_data = pd.DataFrame([[hr, eda, temp, acc]], 
+                              columns=['HR', 'EDA', 'TEMP', 'Acc_Mag'])
+    
+    prediction = model.predict(input_data)[0]
+
+    # 5. Dynamic Prediction Display & Clinical Guidance
+    st.divider()
+    st.subheader(f"Current State: {prediction}")
+
+    if prediction == "Stress":
+        st.error("⚠️ **Action Required: High Overexertion Detected**")
+        st.write("""
+        **Clinical Guidance:**
+        * **Immediate**: Cease strenuous physical activity.
+        * **Intervention**: Practice 4-7-8 breathing for 2 minutes.
+        * **Strategic**: Evaluate environmental triggers and workload.
+        """)
+    elif prediction == "Active":
+        st.success("🏃 **Performance Status: Optimal Activity**")
+        st.write("""
+        **Clinical Guidance:**
+        * **Goal**: You are within the target aerobic training zone.
+        * **Monitoring**: Maintain current pace; ensure proper hydration.
+        """)
+    else:
+        st.info("🧘 **Status: Neutral / Recovery**")
+        st.write("Current physiological markers indicate a stable resting or recovery state.")
+
+except Exception as e:
+    st.error(f"Error loading model: {e}")
+    st.warning("Ensure 'overexertion_model.pkl' is uploaded to your main GitHub folder.")
