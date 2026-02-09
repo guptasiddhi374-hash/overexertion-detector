@@ -2,16 +2,13 @@ import streamlit as st
 import joblib
 import pandas as pd
 
-# 1. Page Configuration & Sidebar
-st.set_page_config(page_title="Wearable AI Monitor", page_icon="⌚")
+# 1. Page Configuration (Wide mode is better for screenshots)
+st.set_page_config(page_title="Wearable AI Monitor", page_icon="⌚", layout="wide")
 
+# 2. Sidebar: Branding, Navigation & Ethics
 st.sidebar.header("🛡️ System Information")
-st.sidebar.info("""
-This AI model predicts physical states using physiological sensor data. 
-Use the 'About' page in the sidebar for technical validation.
-""")
+st.sidebar.info("Predicting physiological overexertion to improve occupational safety.")
 
-# Ethics & Privacy Section
 st.sidebar.divider()
 st.sidebar.subheader("🔒 Data Privacy & Ethics")
 st.sidebar.caption("""
@@ -20,11 +17,12 @@ No Personal Identifiable Information (PII) is stored or
 transmitted. Data is processed locally for inference.
 """)
 
-# 2. Main Interface
+# 3. Main Interface Header
 st.title("⌚ Live Overexertion Detector")
-st.write("Adjust the sliders below to simulate real-time wearable sensor inputs.")
+st.markdown("### Interactive Decision Support Simulation")
 
-# 3. User Inputs (Simulating Sensors)
+# 4. User Inputs (Simulating Wearable Sensors)
+# We use columns to make the UI look professional
 col1, col2 = st.columns(2)
 
 with col1:
@@ -32,41 +30,46 @@ with col1:
     eda = st.slider("EDA (Skin Conductance)", 0.0, 20.0, 1.0)
 
 with col2:
-    temp = st.slider("Body Temp (°C)", 30.0, 42.0, 36.5)
+    temp_val = st.slider("Body Temp (°C)", 30.0, 42.0, 36.5)
     acc = st.slider("Movement (Acc_Mag)", 0.0, 50.0, 1.0)
 
-# 4. Load Model and Make Prediction
+# 5. Load Model and Perform Inference
 try:
+    # Load the serialized Random Forest model
     model = joblib.load('overexertion_model.pkl')
-    # Create feature dataframe (Ensure columns match your training data)
-    input_data = pd.DataFrame([[hr, eda, temp, acc]], 
+    
+    # CRITICAL FIX: Mapping slider 'temp_val' to model feature 'TEMP'
+    input_data = pd.DataFrame([[hr, eda, temp_val, acc]], 
                               columns=['HR', 'EDA', 'TEMP', 'Acc_Mag'])
     
+    # Generate Prediction
     prediction = model.predict(input_data)[0]
 
-    # 5. Dynamic Prediction Display & Clinical Guidance
     st.divider()
-    st.subheader(f"Current State: {prediction}")
-
+    
+    # 6. Dynamic Clinical Guidance & MBA Insights
     if prediction == "Stress":
-        st.error("⚠️ **Action Required: High Overexertion Detected**")
+        st.error(f"## Current State: {prediction}")
         st.write("""
-        **Clinical Guidance:**
-        * **Immediate**: Cease strenuous physical activity.
-        * **Intervention**: Practice 4-7-8 breathing for 2 minutes.
-        * **Strategic**: Evaluate environmental triggers and workload.
+        **⚠️ High Overexertion Detected:** * **Clinical Advice**: Immediate cessation of physical activity. 
+        * **Intervention**: Perform guided recovery breathing (4-7-8 method).
+        * **Business Impact**: High risk of workplace injury; intervention required.
         """)
     elif prediction == "Active":
-        st.success("🏃 **Performance Status: Optimal Activity**")
+        st.success(f"## Current State: {prediction}")
         st.write("""
-        **Clinical Guidance:**
-        * **Goal**: You are within the target aerobic training zone.
-        * **Monitoring**: Maintain current pace; ensure proper hydration.
+        **🏃 Optimal Performance Zone:** * **Clinical Advice**: You are in the target aerobic training zone. 
+        * **Monitoring**: Maintain current pace and ensure electrolyte hydration.
         """)
     else:
-        st.info("🧘 **Status: Neutral / Recovery**")
-        st.write("Current physiological markers indicate a stable resting or recovery state.")
+        st.info(f"## Current State: {prediction}")
+        st.write("""
+        **🧘 Recovery / Neutral State:** * **Clinical Advice**: Physiological markers indicate a stable resting baseline. 
+        * **Status**: System standby.
+        """)
 
 except Exception as e:
-    st.error(f"Error loading model: {e}")
-    st.warning("Ensure 'overexertion_model.pkl' is uploaded to your main GitHub folder.")
+    # Professional error handling for the Viva
+    st.error("⚠️ **System Configuration Error**")
+    st.write(f"Details: {e}")
+    st.info("Check if 'overexertion_model.pkl' is in the main GitHub folder.")
